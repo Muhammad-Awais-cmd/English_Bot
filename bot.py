@@ -23,14 +23,12 @@ async def main():
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("define", define_command))
-    app.add_handler(CommandHandler("synonym", synonym_command))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     commands = [
         BotCommand("start", "Start the bot"),
         BotCommand("help", "Show help guide"),
         BotCommand("define", "Define a word"),
-        BotCommand("synonym", "Get synonyms"),
     ]
     await app.bot.set_my_commands(commands)
 

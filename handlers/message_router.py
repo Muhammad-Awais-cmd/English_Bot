@@ -1,6 +1,6 @@
 from telegram import Update
 from telegram.ext import ContextTypes
-from utils.dictionary import define_word, get_synonyms
+from utils.dictionary import define_word
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Enhanced message routing with better pattern matching"""
@@ -35,29 +35,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await update.message.reply_text("Please specify a word to define. Example: 'Define happiness'")
         return
-    
-    # Synonym patterns
-    elif any(text.startswith(pattern) for pattern in ["synonyms of ", "synonym of ", "synonyms for ", "similar words for "]):
-        word = (text.replace("synonyms of ", "", 1)
-                   .replace("synonym of ", "", 1)
-                   .replace("synonyms for ", "", 1)
-                   .replace("similar words for ", "", 1)
-                   .strip())
-        
-        if word:
-            response = await get_synonyms(word)
-            await update.message.reply_text(response, parse_mode="Markdown")
-        else:
-            await update.message.reply_text("Please specify a word for synonyms. Example: 'Synonyms of brave'")
-        return
-    
+
     # Default helpful response
     else:
         await update.message.reply_text(
             "🤖 **How can I help you today?**\n\n"
             "I can assist you with:\n"
             "• **Definitions:** 'Define serendipity' or 'What is perseverance?'\n"
-            "• **Synonyms:** 'Synonyms of brave' or 'Similar words for happy'\n"
             "💡 *Just type naturally - I'll understand what you need!*",
             parse_mode="Markdown"
         )

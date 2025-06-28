@@ -1,6 +1,6 @@
 from telegram import Update
 from telegram.ext import ContextTypes, CommandHandler
-from utils.dictionary import define_word, get_synonyms
+from utils.dictionary import define_word
 from telegram.constants import ParseMode
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -8,7 +8,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "👋 Hello! I’m your English Assistant Bot.\n\n"
         "I can help you with:\n"
         "• Word meanings\n"
-        "• Synonyms\n"
+        "• Definitions\n"
         "Type anything to get started, or use /help for details."
     )
 
@@ -19,11 +19,8 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• `/start` - Welcome message\n"
         "• `/help` - Show this help guide\n"
         "• `/Define [word]` - Get word definition\n"
-        "• `/Synonym [word]` - Find similar words\n"
         "**Natural Language Examples:**\n"
         "• \"Define serendipity\"\n"
-        "• \"What does perseverance mean?\"\n"
-        "• \"Synonyms of brave\"\n"
         "💡 **Pro Tip:** Just type naturally - I understand conversational requests!",
         parse_mode="Markdown"
     )
@@ -36,13 +33,3 @@ async def define_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     word = context.args[0]
     reply = await define_word(word)
     await update.message.reply_text(reply)
-
-async def synonym_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not context.args:
-        await update.message.reply_text("Please provide a word to find synonyms. Example: /Synonym brave")
-        return
-
-    word = context.args[0]
-    reply = await get_synonyms(word)
-    await update.message.reply_text(reply)
-
