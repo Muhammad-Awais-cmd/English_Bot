@@ -59,59 +59,69 @@ async def define_word(word: str) -> str:
 
     return f"❌ Sorry, I couldn't find the definition for '{word}'. Please check the spelling and try again."
 
-async def get_synonyms(word: str) -> str:
-    """Enhanced synonyms with detailed explanations and examples"""
+async def get_datamuse_synonyms(word: str) -> list[str]:
+    """Fetch synonyms using Datamuse API"""
     try:
+        url = f"https://api.datamuse.com/words?rel_syn={word.lower()}"
         async with httpx.AsyncClient(timeout=10) as client:
-            url = f"https://api.dictionaryapi.dev/api/v2/entries/en/{word.lower()}"
             response = await client.get(url)
             if response.status_code == 200:
                 data = response.json()
-                word_data = data[0]
-                word_title = word_data.get("word", word).capitalize()
-                all_synonyms = []
-                part_of_speech = ""
-                word_definition = ""
-                for meaning in word_data["meanings"]:
-                    if not part_of_speech:
-                        part_of_speech = meaning["partOfSpeech"]
-                        word_definition = meaning["definitions"][0]["definition"]
-                    for definition in meaning["definitions"]:
-                        if "synonyms" in definition and definition["synonyms"]:
-                            all_synonyms.extend(definition["synonyms"])
-                unique_synonyms = list(set(s.lower() for s in all_synonyms if s.lower() != word.lower()))
-                if unique_synonyms:
-                    selected_synonyms = unique_synonyms[:4]
-                    response = f"\U0001F501 **Synonyms of '{word_title}'**\n\n"
-                    response += f"**Original Word:** {word_title} ({part_of_speech}) - {word_definition}\n\n"
-                    response += "**Similar Words:**\n"
-                    for i, syn in enumerate(selected_synonyms, 1):
-                        response += f"{i}. **{syn.capitalize()}** - Used similarly to '{word.lower()}'\n"
-                        response += f"   *Example: \"You can use '{syn}' instead of '{word.lower()}' in most contexts.\"*\n\n"
-                    response += f"\U0001F4A1 *Tip: Try /Define {selected_synonyms[0]} to learn more about these alternatives.*"
-                    return response
+                return [entry["word"] for entry in data if "word" in entry]
     except Exception:
         pass
+    return []
 
+async def get_synonyms(word: str) -> str:
+    """Return clean and professional synonyms for a word from multiple sources"""
+    word_lower = word.lower()
+    word_cap = word.capitalize()
+
+    # 1. Try dictionaryapi.dev
     try:
-        synsets = wordnet.synsets(word.lower())
-        if synsets:
-            synset = synsets[0]
-            lemmas = [lemma.name().replace('_', ' ') for lemma in synset.lemmas()]
-            synonyms = [l for l in lemmas if l.lower() != word.lower()]
-            if synonyms:
-                selected_synonyms = synonyms[:4]
-                pos = synset.pos()
-                pos_full = {'n': 'noun', 'v': 'verb', 'a': 'adjective', 's': 'adjective', 'r': 'adverb'}.get(pos, 'word')
-                response = f"\U0001F501 **Synonyms of '{word.capitalize()}'**\n\n"
-                response += f"**Original Word:** {word.capitalize()} ({pos_full}) - {synset.definition()}\n\n"
-                response += "**Similar Words:**\n"
-                for i, syn in enumerate(selected_synonyms, 1):
-                    response += f"{i}. **{syn.capitalize()}** - Alternative word for '{word.lower()}'\n"
-                    response += f"   *Example: \"'{syn.capitalize()}' can replace '{word.lower()}' in sentences.\"*\n\n"
-                return response
+        async with httpx.AsyncClient(timeout=10) as client:
+            url = f"https://api.dictionaryapi.dev/api/v2/entries/en/{word_lower}"
+            response = await client.get(url)
+            if response.status_code == 200:
+                data = response.json()
+                meanings = data[0].get("meanings", [])
+                all_synonyms = []
+                for meaning in meanings:
+                    for definition in meaning.get("definitions", []):
+                        all_synonyms.extend(definition.get("synonyms", []))
+                unique_synonyms = sorted(set(s for s in all_synonyms if s.lower() != word_lower))
+                if unique_synonyms:
+                    selected = unique_synonyms[:4]
+                    response_text = f"\U0001F501 **Synonyms of '{word_cap}'**\n\n"
+                    for i, syn in enumerate(selected, 1):
+                        response_text += f"{i}. **{syn.capitalize()}**\n"
+                    return response_text
     except Exception:
         pass
 
-    return f"❌ Sorry, I couldn't find synonyms for '{word}'. Please verify the spelling and try again."
+    # 2. Try Datamuse API
+    datamuse_synonyms = await get_datamuse_synonyms(word_lower)
+    if datamuse_synonyms:
+        selected = datamuse_synonyms[:4]
+        response_text = f"\U0001F501 **Synonyms of '{word_cap}'** (via Datamuse)\n\n"
+        for i, syn in enumerate(selected, 1):
+            response_text += f"{i}. **{syn.capitalize()}**\n"
+        return response_text
 
+    # 3. Final fallback: WordNet
+    try:
+        synsets = wordnet.synsets(word_lower)
+        if synsets:
+            lemmas = [lemma.name().replace('_', ' ') for syn in synsets for lemma in syn.lemmas()]
+            synonyms = sorted(set(l for l in lemmas if l.lower() != word_lower))
+            if synonyms:
+                selected = synonyms[:4]
+                response_text = f"\U0001F501 **Synonyms of '{word_cap}'** (via WordNet)\n\n"
+                for i, syn in enumerate(selected, 1):
+                    response_text += f"{i}. **{syn.capitalize()}**\n"
+                return response_text
+    except Exception:
+        pass
+
+    # If all sources fail
+    return f"❌ Sorry, I couldn't find synonyms for '{word}'. Please check the spelling and try again."

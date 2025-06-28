@@ -20,12 +20,10 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• `/help` - Show this help guide\n"
         "• `/Define [word]` - Get word definition\n"
         "• `/Synonym [word]` - Find similar words\n"
-        "• `/Grammar [sentence]` - Check grammar\n\n"
         "**Natural Language Examples:**\n"
         "• \"Define serendipity\"\n"
         "• \"What does perseverance mean?\"\n"
         "• \"Synonyms of brave\"\n"
-        "• \"Grammar check: he go to school\"\n\n"
         "💡 **Pro Tip:** Just type naturally - I understand conversational requests!",
         parse_mode="Markdown"
     )
