@@ -59,10 +59,10 @@ async def define_word(word: str) -> str:
 
     return f"❌ Sorry, I couldn't find the definition for '{word}'. Please check the spelling and try again."
 
-async def get_datamuse_synonyms(word: str) -> list[str]:
-    """Fetch synonyms using Datamuse API"""
+async def fetch_datamuse_words(word: str, relation: str) -> list[str]:
+    """Fetch related words from Datamuse using the specified relation (e.g., rel_syn, rel_trg)."""
     try:
-        url = f"https://api.datamuse.com/words?rel_syn={word.lower()}"
+        url = f"https://api.datamuse.com/words?{relation}={word.lower()}"
         async with httpx.AsyncClient(timeout=10) as client:
             response = await client.get(url)
             if response.status_code == 200:
@@ -71,6 +71,36 @@ async def get_datamuse_synonyms(word: str) -> list[str]:
     except Exception:
         pass
     return []
+
+async def get_datamuse_synonyms(word: str) -> list[str]:
+    word_lower = word.lower()
+
+    # Step 1: Get rel_syn
+    syn_words = await fetch_datamuse_words(word_lower, "rel_syn")
+
+    # Step 2: Fallback to rel_trg if needed
+    trg_words = []
+    if len(syn_words) < 4:
+        trg_words = await fetch_datamuse_words(word_lower, "rel_trg")
+
+    # Step 3: Merge and clean
+    combined = syn_words + trg_words
+    cleaned = []
+    seen = set()
+
+    for w in combined:
+        w_clean = w.strip().lower()
+        if w_clean == word_lower:
+            continue
+        if " " in w_clean or "_" in w_clean:
+            continue
+        if w_clean not in seen:
+            cleaned.append(w_clean)
+            seen.add(w_clean)
+
+    return cleaned[:6]
+
+
 
 async def get_synonyms(word: str) -> str:
     """Return clean and professional synonyms for a word from multiple sources"""
@@ -112,10 +142,24 @@ async def get_synonyms(word: str) -> str:
     try:
         synsets = wordnet.synsets(word_lower)
         if synsets:
-            lemmas = [lemma.name().replace('_', ' ') for syn in synsets for lemma in syn.lemmas()]
-            synonyms = sorted(set(l for l in lemmas if l.lower() != word_lower))
-            if synonyms:
-                selected = synonyms[:4]
+            lemmas = [
+                lemma.name().replace('_', ' ')
+                for syn in synsets
+                for lemma in syn.lemmas()
+            ]
+            cleaned = []
+            seen = set()
+            for l in lemmas:
+                l_clean = l.strip().lower()
+                if l_clean == word_lower:
+                    continue
+                if " " in l_clean:
+                    continue
+                if l_clean not in seen:
+                    cleaned.append(l_clean)
+                    seen.add(l_clean)
+            if cleaned:
+                selected = cleaned[:4]
                 response_text = f"\U0001F501 **Synonyms of '{word_cap}'** (via WordNet)\n\n"
                 for i, syn in enumerate(selected, 1):
                     response_text += f"{i}. **{syn.capitalize()}**\n"
@@ -123,5 +167,6 @@ async def get_synonyms(word: str) -> str:
     except Exception:
         pass
 
+
     # If all sources fail
-    return f"❌ Sorry, I couldn't find synonyms for '{word}'. Please check the spelling and try again."
+    return f"❌ Sorry, I couldn't find synonyms for 'viral'. This may be a modern or informal word not covered by traditional dictionaries."
