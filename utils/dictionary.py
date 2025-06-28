@@ -169,4 +169,4 @@ async def get_synonyms(word: str) -> str:
 
 
     # If all sources fail
-    return f"❌ Sorry, I couldn't find synonyms for 'viral'. This may be a modern or informal word not covered by traditional dictionaries."
+    return f"❌ Sorry, I couldn't find synonyms for '{word}'. This may be a modern or informal word not covered by traditional dictionaries."
