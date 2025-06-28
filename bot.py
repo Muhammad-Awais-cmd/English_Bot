@@ -1,6 +1,6 @@
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
 from config import BOT_TOKEN
-from handlers.commands import start_command, help_command, define_command, synonym_command
+from handlers.commands import start_command, help_command, define_command
 from handlers.message_router import handle_message
 from telegram import BotCommand
 import logging
